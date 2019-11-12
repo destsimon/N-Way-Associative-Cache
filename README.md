@@ -1,0 +1,118 @@
+# N-Way-Associative-Cache #
+
+## What python version do I need?
+version: 3.7 (other versions might work, but not testet)
+
+
+## How do I install this code?
+Run the following command:
+
+```bash
+#!bash
+
+$ pip install n-way-associative-cache-0.1.tar.gz 
+Processing ./n-way-associative-cache-0.1.tar.gz
+Building wheels for collected packages: n-way-associative-cache
+  Building wheel for n-way-associative-cache (setup.py) ... done
+  Stored in directory: /Users/alex.destsimon/Library/Caches/pip/wheels/54/ba/88/878702798112471ed0701b3570e008ee3f0e4143c3ccac2c5d
+Successfully built n-way-associative-cache
+Installing collected packages: n-way-associative-cache
+Successfully installed n-way-associative-cache-0.1
+
+```
+
+## How do I uninstall this code?
+Run the following command:
+
+```bash
+#!bash
+
+$ pip uninstall n-way-associative-cache
+Uninstalling n-way-associative-cache-0.1:
+  Would remove:
+    /Users/alex.destsimon/.pyenv/versions/3.6.8/lib/python3.6/site-packages/cache/*
+    /Users/alex.destsimon/.pyenv/versions/3.6.8/lib/python3.6/site-packages/n_way_associative_cache-0.1.dist-info/*
+Proceed (y/n)? y
+  Successfully uninstalled n-way-associative-cache-0.1
+
+```
+
+## How do I use the Cache?
+
+#### Basic Usage:
+```python
+from cache.cache import NWayAssociativeCache
+
+cache = NWayAssociativeCache()
+```
+This will setup a Cache containing the default number of 4 CacheSets - each CacheSet having a default capacity of 32 entries.
+By default it will use an LRU policy to evict entries if the cache is full. 
+
+
+#### Optional paramaters:
+```python
+num_cache_sets=
+set_size= 
+algo==
+```
+
+Example setting up a cache with 2 CacheSets, each CacheSet having 8 entries, and using an MRU cache replacement policy:
+```python
+from cache.cache import NWayAssociativeCache
+from cache.cache import CacheReplacementPolicyMRU
+
+cache = NWayAssociativeCache(num_cache_sets=2, set_size=8, algo=CacheReplacementPolicyMRU)
+```
+
+
+## How do I create my own custom CacheReplacementPolicy
+Extend from the CacheReplacementPolicy class and implement the select function:
+
+```python
+from cache.cache import CacheReplacementPolicy
+
+class CustomCacheReplacementPolicy(CacheReplacementPolicy):
+    def select(self):
+        return self.head.next if self.head.next != self.tail else None
+```
+
+The CacheSet does callbacks for put/get/accessed events. The following methods can be overridden: 
+```python
+    def node_added(self, node):
+
+    def node_accessed(self, node):
+
+    def node_removed(self, node):
+```
+
+By default the CacheReplacementPolicy base class maintains a double linked list based on last accessed:
+```python
+class CacheReplacementPolicy:
+    def __init__(self):
+        dummy = CacheSet.Node()
+        self.head = dummy
+        self.tail = dummy
+        self.head.next = self.tail
+        self.tail.previous = self.head
+
+    def node_added(self, node):
+        self._add_to_tail(node)
+
+    def node_accessed(self, node):
+        self._unlink_node(node)
+        self._add_to_tail(node)
+
+    def node_removed(self, node):
+        self._unlink_node(node)
+
+    def _add_to_tail(self, node):
+        node.previous = self.tail.previous
+        node.next = self.tail
+        self.tail.previous.next = node
+        self.tail.previous = node
+
+    def _unlink_node(self, node):
+        node.previous.next = node.next
+        node.next.previous = node.previous
+
+```
